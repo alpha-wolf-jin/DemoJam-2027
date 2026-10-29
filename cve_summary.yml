@@ -1,0 +1,37 @@
+---
+# cve_lookup.yml - look up any CVE across public sources and emit one normalised JSON record.
+#
+# Usage:
+#   ansible-playbook cve_lookup.yml -e cve_id=CVE-2024-23334
+#   ansible-playbook cve_lookup.yml -e cve_id=CVE-2024-6387 -e "rh_products='Red Hat Enterprise Linux 9'"
+#   ansible-playbook cve_lookup.yml -e cve_id=CVE-2024-6387 -e write_report=false
+#
+# Optional environment variables:
+#   GITHUB_TOKEN  raises the GitHub Advisory API limit from 60 to 5,000 requests/hour
+#   NVD_API_KEY   raises the NVD API limit from 5 to 50 requests per 30 seconds
+#
+# Sources (all optional - the record is built from whichever ones answer):
+#   CVE.org        title, description, CNA/ADP CVSS, CPEs, solutions, workarounds, CISA KEV + SSVC
+#   NVD            description fallback, vulnerable CPE matches, NVD CVSS, CWE, CISA KEV fields
+#   GitHub (GHSA)  ecosystem, repository URL, vulnerable ranges, first patched version
+#   OSV.dev        package URLs, affected and fixed versions
+#   Red Hat        RPM purls, product CPEs, severity, statement, mitigation, RHSA, fix state
+#   FIRST EPSS     probability of exploitation in the next 30 days
+#
+# Controller requirements: ansible-core only (no jmespath / extra collections).
+
+- name: CVE detail lookup
+  hosts: all
+  gather_facts: false
+
+
+  tasks:
+
+    - name: Post to Slack
+      ansible.builtin.include_tasks: tasks/slack_notify.yml
+      vars:
+        slack_status: completed
+        slack_title: "AI CVE Analysis\n        {{ cve_record.cve_id }} - {{ cve_record.title }}"
+        slack_text: "{{ description }}\n\nCheck the AAP job output for details.\nLink: https://myaap-ansible-automation-platform.apps.hub.lab.com/execution/jobs/playbook/{{ awx_job_id }}/output"
+        slack_new_thread: false
+        slack_broadcast: false

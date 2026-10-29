@@ -1,0 +1,18 @@
+- name: Send CVE Investigation Notification
+  #hosts: localhost
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Notify user via Email
+      ansible.builtin.debug: 
+        msg: "{{ report | split('\n') | list }}"
+
+    - name: Post to Slack
+      ansible.builtin.include_tasks: tasks/slack_notify.yml
+      vars:
+        slack_status: running
+        slack_title: "{{ report | trim }} Investigation"
+        #slack_text: "Start CVE {{ report | trim }} Investigation ... \nDemo Jam LightWell"
+        slack_new_thread: true
+        slack_broadcast: false
